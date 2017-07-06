@@ -1,0 +1,828 @@
+/*
+ * Copyright 2017 Seven Bridges Genomics, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.sevenbridges.apiclient.impl.ds;
+
+import com.sevenbridges.apiclient.client.ApiKey;
+import com.sevenbridges.apiclient.http.HttpMethod;
+import com.sevenbridges.apiclient.impl.error.DefaultError;
+import com.sevenbridges.apiclient.impl.http.CanonicalUri;
+import com.sevenbridges.apiclient.impl.http.HttpHeaders;
+import com.sevenbridges.apiclient.impl.http.MediaType;
+import com.sevenbridges.apiclient.impl.http.QueryString;
+import com.sevenbridges.apiclient.impl.http.QueryStringFactory;
+import com.sevenbridges.apiclient.impl.http.Request;
+import com.sevenbridges.apiclient.impl.http.RequestExecutor;
+import com.sevenbridges.apiclient.impl.http.Response;
+import com.sevenbridges.apiclient.impl.http.support.DefaultCanonicalUri;
+import com.sevenbridges.apiclient.impl.http.support.DefaultRequest;
+import com.sevenbridges.apiclient.impl.query.DefaultCriteria;
+import com.sevenbridges.apiclient.impl.query.DefaultOptions;
+import com.sevenbridges.apiclient.impl.resource.AbstractResource;
+import com.sevenbridges.apiclient.impl.resource.ReferenceFactory;
+import com.sevenbridges.apiclient.impl.util.StringInputStream;
+import com.sevenbridges.apiclient.impl.util.VersionUtils;
+import com.sevenbridges.apiclient.lang.Assert;
+import com.sevenbridges.apiclient.lang.Collections;
+import com.sevenbridges.apiclient.lang.Strings;
+import com.sevenbridges.apiclient.query.Criteria;
+import com.sevenbridges.apiclient.query.Options;
+import com.sevenbridges.apiclient.resource.CollectionResource;
+import com.sevenbridges.apiclient.resource.Resource;
+import com.sevenbridges.apiclient.resource.ResourceException;
+import com.sevenbridges.apiclient.resource.Saveable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.TreeMap;
+
+public class DefaultDataStore implements InternalDataStore {
+
+  private static final Logger log = LoggerFactory.getLogger(DefaultDataStore.class);
+
+  public static final String DEFAULT_SERVER_HOST = "api.sbgenomics.com";
+
+  public static final int DEFAULT_API_VERSION = 2;
+
+  private static final String APPEND_PARAM_CHAR = "&";
+
+  public static final String DEFAULT_CRITERIA_MSG = "The " + DefaultDataStore.class.getName() +
+      " implementation only functions with " + DefaultCriteria.class.getName() + " instances.";
+
+  public static final String DEFAULT_OPTIONS_MSG = "The " + DefaultDataStore.class.getName() +
+      " implementation only functions with " + DefaultOptions.class.getName() + " instances.";
+
+  public static final String HREF_SAVE_MSG = "'save' may only be called on objects that have already been " +
+      "persisted and have an existing " + AbstractResource.HREF_PROP_NAME + " attribute.";
+
+  public static final String HREF_UPDATE_MSG = "'update' may only be called on objects that have already been " +
+      "persisted and have an existing " + AbstractResource.HREF_PROP_NAME + " attribute.";
+
+  private static final String TOTAL_MATCHING_QUERY_HEADER = "X-Total-Matching-Query";
+
+  private final String baseUrl;
+  private final ApiKey apiKey;
+  private final RequestExecutor requestExecutor;
+  private final ResourceFactory resourceFactory;
+  private final MapMarshaller mapMarshaller;
+  private final ResourceConverter resourceConverter;
+  private final QueryStringFactory queryStringFactory;
+  private final List<Filter> filters;
+
+  public static final String USER_AGENT_STRING = VersionUtils.getUserAgent();
+
+  public DefaultDataStore(RequestExecutor requestExecutor, ApiKey apiKey) {
+    this(requestExecutor, DEFAULT_API_VERSION, apiKey);
+  }
+
+  public DefaultDataStore(RequestExecutor requestExecutor, int apiVersion, ApiKey apiKey) {
+    this(requestExecutor, "https://" + DEFAULT_SERVER_HOST + "/v" + apiVersion, apiKey);
+  }
+
+
+  public DefaultDataStore(RequestExecutor requestExecutor, String baseUrl, ApiKey apiKey) {
+    Assert.notNull(baseUrl, "baseUrl cannot be null");
+    Assert.notNull(requestExecutor, "RequestExecutor cannot be null.");
+    Assert.notNull(apiKey, "ApiKey cannot be null.");
+    this.requestExecutor = requestExecutor;
+    this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+    this.resourceFactory = new DefaultResourceFactory(this);
+    this.mapMarshaller = new JacksonMapMarshaller();
+    this.queryStringFactory = new QueryStringFactory();
+
+    ReferenceFactory referenceFactory = new ReferenceFactory();
+    this.resourceConverter = new DefaultResourceConverter(referenceFactory);
+
+    this.filters = new ArrayList<>();
+
+    this.filters.add(new EnlistmentFilter());
+  }
+
+  @Override
+  public ApiKey getApiKey() {
+    return apiKey;
+  }
+
+  ////////////////////////////////////////////////////////////////////////
+  // Resource Instantiation
+  ////////////////////////////////////////////////////////////////////////
+
+  @Override
+  public <T extends Resource> T instantiate(Class<T> clazz) {
+    return this.resourceFactory.instantiate(clazz);
+  }
+
+  @Override
+  public <T extends Resource> T instantiate(Class<T> clazz, Map<String, Object> properties) {
+    return this.resourceFactory.instantiate(clazz, properties);
+  }
+
+  private <T extends Resource> T instantiate(Class<T> clazz, Map<String, ?> properties, QueryString qs) {
+    if (CollectionResource.class.isAssignableFrom(clazz)) {
+      //only collections can support a query string constructor argument:
+      return this.resourceFactory.instantiate(clazz, properties, qs);
+    }
+    //otherwise it must be an instance resource, so use the two-arg constructor:
+    return this.resourceFactory.instantiate(clazz, properties);
+  }
+
+  @Override
+  public <T extends Resource> T instantiate(Class<T> clazz, Map<String, Object> properties, boolean hrefFragment) {
+    if (hrefFragment) {
+      Assert.hasText((String) properties.get("href"), "when hrefFragment is set to true the properties map must contain an href key.");
+      String hrefValue = (String) properties.get("href");
+      hrefValue = qualify(hrefValue);
+      properties.put("href", hrefValue);
+    }
+    return this.instantiate(clazz, properties);
+  }
+
+  ////////////////////////////////////////////////////////////////////////
+  // Resource Retrieval
+  ////////////////////////////////////////////////////////////////////////
+
+  @Override
+  public <T extends Resource> T getResource(String href, Class<T> clazz) {
+    return getResource(href, clazz, (Map<String, Object>) null);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T extends Resource> T getResource(String href, Class<T> clazz, Criteria criteria) {
+    Assert.isInstanceOf(DefaultCriteria.class, criteria, DEFAULT_CRITERIA_MSG);
+    QueryString qs = queryStringFactory.createQueryString(href, (DefaultCriteria) criteria);
+    return (T) getResource(href, clazz, (Map) qs);
+  }
+
+  public <T extends Resource> T getResource(String href, Class<T> clazz, Map<String, Object> queryParameters) {
+    ResourceDataResult result = getResourceData(href, clazz, queryParameters);
+    return instantiate(clazz, result.getData(), result.getUri().getQuery());
+  }
+
+  /**
+   * This method provides the ability to instruct the DataStore how to decide which class of a
+   * resource hierarchy will be instantiated.
+   *
+   * @param href            the endpoint where the request will be targeted to.
+   * @param parent          the root class of the Resource hierarchy (helps to validate that the
+   *                        idClassMap contains subclasses of it).
+   * @param childIdProperty the property whose value will be used to identify the specific class in
+   *                        the hierarchy that we need to instantiate.
+   * @param idClassMap      a mapping to be able to know which class corresponds to each
+   *                        <code>childIdProperty</code> value.
+   * @param <T>             the root of the hierarchy of the Resource we want to instantiate.
+   * @param <R>             the sub-class of the root Resource.
+   * @return the retrieved resource
+   */
+  @Override
+  public <T extends Resource, R extends T> R getResource(String href, Class<T> parent, String childIdProperty,
+                                                         Map<String, Class<? extends R>> idClassMap) {
+    Assert.hasText(childIdProperty, "childIdProperty cannot be null or empty.");
+    Assert.notEmpty(idClassMap, "idClassMap cannot be null or empty.");
+
+    ResourceDataResult result = getResourceData(href, parent, null);
+    Map<String, ?> data = result.getData();
+
+    if (Collections.isEmpty(data)) {
+      throw new IllegalStateException(childIdProperty + " could not be found in: " + data + ".");
+    }
+
+    String childClassName = null;
+    Object val = data.get(childIdProperty);
+    if (val != null) {
+      childClassName = String.valueOf(val);
+    }
+    Class<? extends R> childClass = idClassMap.get(childClassName);
+
+    if (childClass == null) {
+      throw new IllegalStateException("No Class mapping could be found for " + childIdProperty + ".");
+    }
+
+    return instantiate(childClass, data, result.getUri().getQuery());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T extends Resource, O extends Options> T getResource(String href, Class<T> clazz, O options) {
+    Assert.hasText(href, "href argument cannot be null or empty.");
+    Assert.notNull(clazz, "Resource class argument cannot be null.");
+    Assert.isInstanceOf(DefaultOptions.class, options, "The " + getClass().getName() + " implementation only functions with " +
+        DefaultOptions.class.getName() + " instances.");
+    DefaultOptions defaultOptions = (DefaultOptions) options;
+    QueryString qs = queryStringFactory.createQueryString(defaultOptions);
+    return (T) getResource(href, clazz, (Map) qs);
+  }
+
+
+  @Override
+  public <T extends Resource, R extends Resource> R resourceAction(String actionHref,
+                                                                   T resource,
+                                                                   final Class<? extends R> returnType,
+                                                                   Map<String, Object> queryParams) {
+    return resourceAction(actionHref, resource, returnType, queryParams, null);
+  }
+
+  @Override
+  public <T extends Resource, R extends Resource> R resourceAction(String actionHref,
+                                                                   T resource,
+                                                                   final Class<? extends R> returnType,
+                                                                   Map<String, Object> queryParams,
+                                                                   Map<String, Object> bodyParams) {
+    Assert.hasText(actionHref, "href argument cannot be null or empty.");
+    Assert.notNull(returnType, "Resource class argument cannot be null.");
+    Assert.hasText(resource.getHref(), "Resource must have href property");
+    Assert.isInstanceOf(AbstractResource.class, resource);
+    Assert.isTrue(!CollectionResource.class.isAssignableFrom(resource.getClass()), "Collections cannot be persisted.");
+
+    String href = resource.getHref() + actionHref;
+    QueryString qs = toQueryString(queryParams);
+
+    final CanonicalUri uri = canonicalize(href, qs);
+    final AbstractResource abstractResource = (AbstractResource) resource;
+
+    FilterChain chain = new DefaultFilterChain(this.filters, new FilterChain() {
+      @Override
+      public ResourceDataResult filter(final ResourceDataRequest req) {
+
+        long length = -1;
+        StringInputStream body = null;
+        if (req.getData() != null) {
+          String bodyString = mapMarshaller.marshal(req.getData());
+          body = new StringInputStream(bodyString);
+          length = body.available();
+        }
+
+        CanonicalUri uri = req.getUri();
+        String href = uri.getAbsolutePath();
+        QueryString qs = uri.getQuery();
+
+        HttpHeaders httpHeaders = req.getHttpHeaders();
+        Request request = new DefaultRequest(HttpMethod.POST, href, qs, httpHeaders, body, length);
+
+        Response response = execute(request);
+        Map<String, Object> responseBody = getBody(response);
+
+        if (Collections.isEmpty(responseBody)) {
+          // 202 means that the request has been accepted for processing, but the processing has not been completed.
+          // Therefore we do not have a response body.
+          if (response.getHttpStatus() == 202 || response.getHttpStatus() == 200) {
+            responseBody = java.util.Collections.emptyMap();
+          } else {
+            throw new IllegalStateException("Unable to obtain resource data from the API server.");
+          }
+        }
+
+        ResourceAction responseAction = getPostAction(req, response);
+
+        return new DefaultResourceDataResult(responseAction, uri, returnType, responseBody);
+      }
+    });
+
+    if (bodyParams == null) {
+      bodyParams = java.util.Collections.emptyMap();
+    }
+    ResourceDataRequest request = new DefaultResourceDataRequest(ResourceAction.CREATE, uri, abstractResource.getClass(), bodyParams, null);
+
+    ResourceDataResult result = chain.filter(request);
+    Map<String, Object> data = result.getData();
+
+    if (data.isEmpty()) {
+      return null; // returning only 200 and empty body on post actions
+    }
+
+    //ensure the caller's argument is updated with what is returned from the server if the types are the same:
+    if (returnType.equals(abstractResource.getClass())) {
+      abstractResource.setProperties(data);
+    }
+
+    return resourceFactory.instantiate(returnType, data);
+  }
+
+  @Override
+  public void reload(String resourceHref, Class<? extends Resource> resourceType, Resource resource) {
+    ResourceDataResult result = getResourceData(resourceHref, resourceType, null);
+    ((AbstractResource) resource).setProperties(result.getData());
+  }
+
+
+  @SuppressWarnings("unchecked")
+  private ResourceDataResult getResourceData(String href, Class<? extends Resource> clazz, Map<String, ?> queryParameters) {
+    Assert.hasText(href, "href argument cannot be null or empty.");
+    Assert.notNull(clazz, "Resource class argument cannot be null.");
+
+    FilterChain chain = new DefaultFilterChain(this.filters, new FilterChain() {
+      @Override
+      public ResourceDataResult filter(final ResourceDataRequest req) {
+
+        CanonicalUri uri = req.getUri();
+
+        Request getRequest = new DefaultRequest(HttpMethod.GET, uri.getAbsolutePath(), uri.getQuery());
+        Response getResponse = execute(getRequest);
+        Map<String, ?> body = getBody(getResponse);
+
+        if (Collections.isEmpty(body)) {
+          throw new IllegalStateException("Unable to obtain resource data from the API server or from cache.");
+        }
+
+        return new DefaultResourceDataResult(req.getAction(), uri, req.getResourceClass(), (Map<String, Object>) body);
+      }
+    });
+
+    CanonicalUri uri = canonicalize(href, queryParameters);
+    ResourceDataRequest req = new DefaultResourceDataRequest(ResourceAction.READ, uri, clazz, new HashMap<String, Object>());
+    return chain.filter(req);
+  }
+
+  private ResourceAction getPostAction(ResourceDataRequest request, Response response) {
+    int httpStatus = response.getHttpStatus();
+    if (httpStatus == 201) {
+      return ResourceAction.CREATE;
+    }
+    if (httpStatus == 200) {
+      return ResourceAction.READ;
+    }
+
+    return request.getAction();
+  }
+
+  ////////////////////////////////////////////////////////////////////////
+  // Resource Persistence
+  ////////////////////////////////////////////////////////////////////////
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T extends Resource> T create(String parentHref, T resource) {
+    return (T) save(parentHref, resource, null, resource.getClass(), null, true);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T extends Resource> T create(String parentHref, T resource, Options options) {
+    QueryString qs = toQueryString(parentHref, options);
+    return (T) save(parentHref, resource, null, resource.getClass(), qs, true);
+  }
+
+  @Override
+  public <T extends Resource, R extends Resource> R create(String parentHref, T resource, Class<? extends R> returnType) {
+    return save(parentHref, resource, null, returnType, null, true);
+  }
+
+  @Override
+  public <T extends Resource, R extends Resource> R create(String parentHref, T resource, Class<? extends R> returnType, HttpHeaders requestHeaders) {
+    return save(parentHref, resource, requestHeaders, returnType, null, true);
+  }
+
+  @Override
+  public <T extends Resource, R extends Resource> R create(String parentHref, T resource, Class<? extends R> returnType, Options options) {
+    QueryString qs = toQueryString(parentHref, options);
+    return save(parentHref, resource, null, returnType, qs, true);
+  }
+
+  @Override
+  public <T extends Resource, R extends Resource> R create(String parentHref, T resource, Class<? extends R> returnType, Map<String, Object> queryParams) {
+    QueryString qs = toQueryString(queryParams);
+    return save(parentHref, resource, null, returnType, qs, true);
+  }
+
+  @Override
+  public <T extends Resource & Saveable> void save(T resource) {
+    String href = resource.getHref();
+    Assert.hasText(href, HREF_SAVE_MSG);
+    save(href, resource, null, resource.getClass(), null, false);
+  }
+
+  @Override
+  public <T extends Resource & Saveable> void save(T resource, Options options) {
+    Assert.notNull(options, "options argument cannot be null.");
+    String href = resource.getHref();
+    Assert.hasText(href, HREF_SAVE_MSG);
+    QueryString qs = toQueryString(href, options);
+    save(href, resource, null, resource.getClass(), qs, false);
+  }
+
+  @Override
+  public <T extends Resource & Saveable, R extends Resource> R save(T resource, Class<? extends R> returnType) {
+    Assert.hasText(resource.getHref(), HREF_SAVE_MSG);
+    return save(resource.getHref(), resource, null, returnType, null, false);
+  }
+
+  @Override
+  public <T extends Resource & Saveable> void update(T resource) {
+    update(resource, false);
+  }
+
+  @Override
+  public <T extends Resource & Saveable> void update(T resource, Options options) {
+    update(resource, false, options);
+  }
+
+  @Override
+  public <T extends Resource & Saveable> void update(T resource, boolean force) {
+    String href = resource.getHref();
+    Assert.hasText(href, HREF_UPDATE_MSG);
+    if (force) {
+      replace(href, resource, null, resource.getClass(), null, false);
+    } else {
+      update(href, resource, null, resource.getClass(), null, false);
+    }
+  }
+
+  @Override
+  public <T extends Resource & Saveable> void update(T resource, boolean force, Options options) {
+    Assert.notNull(options, "options argument cannot be null.");
+    String href = resource.getHref();
+    Assert.hasText(href, HREF_UPDATE_MSG);
+    QueryString qs = toQueryString(href, options);
+    if (force) {
+      replace(href, resource, null, resource.getClass(), qs, false);
+    } else {
+      update(href, resource, null, resource.getClass(), qs, false);
+    }
+  }
+
+  private QueryString toQueryString(String href, Options options) {
+    if (options == null) {
+      return null;
+    }
+    Assert.isInstanceOf(DefaultOptions.class, options, DEFAULT_OPTIONS_MSG);
+    DefaultOptions defaultOptions = (DefaultOptions) options;
+    return queryStringFactory.createQueryString(href, defaultOptions);
+  }
+
+  private QueryString toQueryString(Map<String, Object> queryParams) {
+    if (queryParams == null) {
+      return null;
+    }
+    return queryStringFactory.createQueryString(queryParams);
+  }
+
+  private <T extends Resource, R extends Resource> R save(final String href,
+                                                          final T resource,
+                                                          final HttpHeaders requestHeaders,
+                                                          final Class<? extends R> returnType,
+                                                          final QueryString qs,
+                                                          final boolean create) {
+    return persist(href, resource, HttpMethod.POST, requestHeaders, returnType, qs, create);
+  }
+
+  private <T extends Resource, R extends Resource> R update(final String href,
+                                                            final T resource,
+                                                            final HttpHeaders requestHeaders,
+                                                            final Class<? extends R> returnType,
+                                                            final QueryString qs,
+                                                            final boolean create) {
+    return persist(href, resource, HttpMethod.PATCH, requestHeaders, returnType, qs, create);
+  }
+
+  private <T extends Resource, R extends Resource> R replace(final String href,
+                                                             final T resource,
+                                                             final HttpHeaders requestHeaders,
+                                                             final Class<? extends R> returnType,
+                                                             final QueryString qs,
+                                                             final boolean create) {
+    return persist(href, resource, HttpMethod.PUT, requestHeaders, returnType, qs, create);
+  }
+
+  private <T extends Resource, R extends Resource> R persist(final String href,
+                                                             final T resource,
+                                                             final HttpMethod method,
+                                                             final HttpHeaders requestHeaders,
+                                                             final Class<? extends R> returnType,
+                                                             final QueryString qs,
+                                                             final boolean create) {
+    Assert.hasText(href, "href argument cannot be null or empty.");
+    Assert.notNull(resource, "resource argument cannot be null.");
+    Assert.notNull(returnType, "returnType class cannot be null.");
+    Assert.isInstanceOf(AbstractResource.class, resource);
+    Assert.isTrue(!CollectionResource.class.isAssignableFrom(resource.getClass()), "Collections cannot be persisted.");
+
+    final CanonicalUri uri = canonicalize(href, qs);
+    final AbstractResource abstractResource = (AbstractResource) resource;
+
+    Map<String, Object> subResorcesData = new HashMap<>();
+    if (!create) {
+      final Map<String, Map<String, Object>> subResourcesProps = resourceConverter.convertSubResources(abstractResource);
+
+      // patching subresource then put those props to resource
+
+      for (Map.Entry<String, Map<String, Object>> subResProp : subResourcesProps.entrySet()) {
+        final CanonicalUri subUri = canonicalize(href + "/" + subResProp.getKey(),
+            java.util.Collections.<String, Object>emptyMap());
+
+        FilterChain chain = new DefaultFilterChain(this.filters, new FilterChain() {
+          @Override
+          public ResourceDataResult filter(ResourceDataRequest req) {
+            String bodyString;
+            if (req.getHttpHeaders().getContentType() != null &&
+                req.getHttpHeaders().getContentType().equals(MediaType.APPLICATION_FORM_URLENCODED)) {
+              bodyString = buildCanonicalBodyQueryParams(req.getData());
+            } else {
+              bodyString = mapMarshaller.marshal(req.getData());
+            }
+            StringInputStream body = new StringInputStream(bodyString);
+            long length = body.available();
+
+            CanonicalUri uri = req.getUri();
+            String href = uri.getAbsolutePath();
+            QueryString qs = uri.getQuery();
+
+            HttpHeaders httpHeaders = req.getHttpHeaders();
+            Request request = new DefaultRequest(HttpMethod.PATCH, href, qs, httpHeaders, body, length);
+
+            Response response = execute(request);
+            Map<String, Object> responseBody = getBody(response);
+
+            if (Collections.isEmpty(responseBody)) {
+              // 202 means that the request has been accepted for processing, but the processing has not been completed.
+              // Therefore we do not have a response body.
+              if (response.getHttpStatus() == 202) {
+                responseBody = java.util.Collections.emptyMap();
+              } else if (response.getHttpStatus() == 303 || response.getHttpStatus() == 302) {
+                responseBody = new HashMap<>();
+                responseBody.put("href", response.getHeaders().getFirst("Location"));
+              } else {
+                throw new IllegalStateException("Unable to obtain resource data from the API server.");
+              }
+            }
+
+            ResourceAction responseAction = getPostAction(req, response);
+
+            return new DefaultResourceDataResult(responseAction, uri, returnType, responseBody);
+          }
+        });
+        ResourceAction subResourceAction = ResourceAction.UPDATE;
+        ResourceDataRequest request = new DefaultResourceDataRequest(subResourceAction, subUri,
+            abstractResource.getClass(), subResProp.getValue(), requestHeaders);
+
+        ResourceDataResult result = chain.filter(request);
+
+        Map<String, Object> data = result.getData();
+        subResorcesData.put(subResProp.getKey(), data);
+      }
+    }
+
+    final Map<String, Object> props =
+        create ? resourceConverter.convert(abstractResource)
+            : resourceConverter.convertNonSubResources(abstractResource);
+
+    if (props == null || props.size() == 0) {
+      ((AbstractResource) resource).refreshProperties(subResorcesData);
+      return null;
+    }
+
+    FilterChain chain = new DefaultFilterChain(this.filters, new FilterChain() {
+      @Override
+      public ResourceDataResult filter(final ResourceDataRequest req) {
+
+        String bodyString;
+        if (req.getHttpHeaders().getContentType() != null && req.getHttpHeaders().getContentType().equals(MediaType.APPLICATION_FORM_URLENCODED)) {
+          bodyString = buildCanonicalBodyQueryParams(req.getData());
+        } else {
+          bodyString = mapMarshaller.marshal(req.getData());
+        }
+        StringInputStream body = new StringInputStream(bodyString);
+        long length = body.available();
+
+        CanonicalUri uri = req.getUri();
+        String href = uri.getAbsolutePath();
+        QueryString qs = uri.getQuery();
+
+        HttpHeaders httpHeaders = req.getHttpHeaders();
+        Request request = new DefaultRequest(method, href, qs, httpHeaders, body, length);
+
+        Response response = execute(request);
+        Map<String, Object> responseBody = getBody(response);
+
+        if (Collections.isEmpty(responseBody)) {
+          // 202 means that the request has been accepted for processing, but the processing has not been completed.
+          // Therefore we do not have a response body.
+          if (response.getHttpStatus() == 202) {
+            responseBody = java.util.Collections.emptyMap();
+          } else if (response.getHttpStatus() == 303 || response.getHttpStatus() == 302) {
+            responseBody = new HashMap<>();
+            responseBody.put("href", response.getHeaders().getFirst("Location"));
+          } else {
+            throw new IllegalStateException("Unable to obtain resource data from the API server.");
+          }
+        }
+
+        ResourceAction responseAction = getPostAction(req, response);
+
+        return new DefaultResourceDataResult(responseAction, uri, returnType, responseBody);
+      }
+    });
+
+    ResourceAction action = create ? ResourceAction.CREATE : ResourceAction.UPDATE;
+    ResourceDataRequest request = new DefaultResourceDataRequest(action, uri, abstractResource.getClass(), props, requestHeaders);
+
+    ResourceDataResult result = chain.filter(request);
+
+    Map<String, Object> data = result.getData();
+
+    for (Map.Entry<String, Object> subResEntry : subResorcesData.entrySet()) {
+      if (!data.containsKey(subResEntry.getKey())) {
+        data.put(subResEntry.getKey(), subResEntry.getValue());
+      }
+    }
+
+    //ensure the caller's argument is updated with what is returned from the server if the types are the same:
+    if (returnType.equals(abstractResource.getClass())) {
+      abstractResource.setProperties(data);
+    }
+
+    return resourceFactory.instantiate(returnType, data);
+  }
+
+  ////////////////////////////////////////////////////////////////////////
+  // Resource Deletion
+  ////////////////////////////////////////////////////////////////////////
+
+  @Override
+  public <T extends Resource> void delete(T resource) {
+    doDelete(resource, null);
+  }
+
+  @Override
+  public <T extends Resource> void deleteResourceProperty(T resource, String propertyName) {
+    Assert.hasText(propertyName, "propertyName cannot be null or empty.");
+    doDelete(resource, propertyName);
+  }
+
+  private String buildCanonicalBodyQueryParams(Map<String, Object> bodyData) {
+    StringBuilder builder = new StringBuilder();
+    Map<String, Object> treeMap = new TreeMap<>(bodyData);
+    try {
+      for (Map.Entry<String, Object> entry : treeMap.entrySet()) {
+        if (builder.length() > 0) {
+          builder.append(APPEND_PARAM_CHAR);
+        }
+        builder.append(String.format("%s=%s", URLEncoder.encode(entry.getKey(), "UTF-8"), URLEncoder.encode(entry.getValue().toString(), "UTF-8")));
+      }
+    } catch (UnsupportedEncodingException e) {
+      log.trace("Body content could not be properly encoded");
+      return null;
+    }
+    return builder.toString();
+  }
+
+  private <T extends Resource> void doDelete(T resource, final String possiblyNullPropertyName) {
+
+    Assert.notNull(resource, "resource argument cannot be null.");
+    Assert.isInstanceOf(AbstractResource.class, resource, "Resource argument must be an AbstractResource.");
+
+    AbstractResource abstractResource = (AbstractResource) resource;
+    final String resourceHref = abstractResource.getHref();
+    final String requestHref;
+    if (Strings.hasText(possiblyNullPropertyName)) { //delete just that property, not the entire resource:
+      requestHref = resourceHref + "/" + possiblyNullPropertyName;
+    } else {
+      requestHref = resourceHref;
+    }
+
+    FilterChain chain = new DefaultFilterChain(this.filters, new FilterChain() {
+
+      @Override
+      public ResourceDataResult filter(ResourceDataRequest request) {
+        Request deleteRequest = new DefaultRequest(HttpMethod.DELETE, requestHref);
+        execute(deleteRequest);
+        //delete requests have HTTP 204 (no content), so just create an empty body for the result:
+        return new DefaultResourceDataResult(request.getAction(), request.getUri(), request.getResourceClass(), new HashMap<String, Object>());
+      }
+    });
+
+    final CanonicalUri resourceUri = canonicalize(resourceHref, null);
+    ResourceDataRequest request = new DefaultResourceDataRequest(ResourceAction.DELETE, resourceUri, resource.getClass(), new HashMap<String, Object>());
+    chain.filter(request);
+  }
+
+  private Response execute(Request request) throws ResourceException {
+
+    applyDefaultRequestHeaders(request);
+
+    log.trace("Submitting request for execution - {} {}", request.getMethod().toString(), request.getResourceUrl().toString() + '?' + request.getQueryString().toString(false));
+    Response response = this.requestExecutor.executeRequest(request);
+    log.trace("Executed HTTP request.");
+
+    if (response.isError()) {
+      Map<String, Object> body = getBody(response);
+
+      if (!body.containsKey("status")) {
+        body.put("status", response.getHttpStatus());
+      }
+
+      DefaultError error = new DefaultError(body);
+
+      throw new ResourceException(error);
+    }
+
+    return response;
+  }
+
+  private Map<String, Object> getBody(Response response) {
+
+    Assert.notNull(response, "response argument cannot be null.");
+
+    Map<String, Object> out = null;
+
+    if (response.hasBody()) {
+      out = mapMarshaller.unmarshall(response.getBody());
+    }
+
+    if (response.getHeaders() != null && response.getHeaders().getFirst(TOTAL_MATCHING_QUERY_HEADER) != null) {
+      try {
+        out.put("size", Integer.valueOf(response.getHeaders().getFirst(TOTAL_MATCHING_QUERY_HEADER)));
+      } catch (NumberFormatException | NullPointerException e) {
+        // just don't put size param into body map, we don't need to handle this
+      }
+    }
+
+    return out;
+  }
+
+  protected void applyDefaultRequestHeaders(Request request) {
+    request.getHeaders().setAccept(java.util.Collections.singletonList(MediaType.APPLICATION_JSON));
+    request.getHeaders().set("User-Agent", USER_AGENT_STRING);
+    if (request.getHeaders().getContentType() == null) {
+      if (request.getBody() != null) {
+        // We only add the default content type (application/json) if a content type is not already in the request
+        request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+      }
+    }
+  }
+
+  protected CanonicalUri canonicalize(String href, Map<String, ?> queryParams) {
+    href = ensureFullyQualified(href);
+    return DefaultCanonicalUri.create(href, queryParams);
+  }
+
+  protected String ensureFullyQualified(String href) {
+    String value = href;
+    if (!isFullyQualified(href)) {
+      value = qualify(href);
+    }
+    return value;
+  }
+
+  protected boolean isFullyQualified(String href) {
+
+    if (href == null || href.length() < 5) {
+      return false;
+    }
+
+    char c = href.charAt(0);
+    if (c == 'h' || c == 'H') {
+      c = href.charAt(1);
+      if (c == 't' || c == 'T') {
+        c = href.charAt(2);
+        if (c == 't' || c == 'T') {
+          c = href.charAt(3);
+          if (c == 'p' || c == 'P') {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  protected String qualify(String href) {
+    StringBuilder sb = new StringBuilder(this.baseUrl);
+    if (!href.startsWith("/")) {
+      sb.append("/");
+    }
+    sb.append(href);
+    return sb.toString();
+  }
+
+  private static String toString(InputStream is) {
+    try {
+      return new Scanner(is, "UTF-8").useDelimiter("\\A").next();
+    } catch (java.util.NoSuchElementException e) {
+      log.trace("Response body input stream did not contain any content.", e);
+      return null;
+    }
+  }
+}

@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+~  Copyright 2017 Seven Bridges Genomics, Inc. All rights reserved.
+~
+~  Licensed under the Apache License, Version 2.0 (the "License");
+~  you may not use this file except in compliance with the License.
+~  You may obtain a copy of the License at
+~
+~      http://www.apache.org/licenses/LICENSE-2.0
+~
+~  Unless required by applicable law or agreed to in writing, software
+~  distributed under the License is distributed on an "AS IS" BASIS,
+~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~  See the License for the specific language governing permissions and
+~  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.basepom</groupId>
+    <artifactId>basepom-minimal</artifactId>
+    <version>23</version>
+  </parent>
+
+  <groupId>com.sevenbridges.apiclient</groupId>
+  <artifactId>sevenbridges-java-parent</artifactId>
+  <version>0.5.0-SNAPSHOT</version>
+
+  <packaging>pom</packaging>
+
+  <name>SevenBridges Platform Java</name>
+  <description>
+    The SevenBridges Platform Java enables JVM-based applications to easily interact with SevenBridges's REST API.
+  </description>
+
+  <inceptionYear>2016</inceptionYear>
+
+  <organization>
+    <name>Seven Bridges Genomics, Inc.</name>
+    <url>https://www.sevenbridges.com/</url>
+  </organization>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>sevenbridges-java-team</id>
+      <name>SevenBridges Java team</name>
+      <organization>Seven Bridges Genomics, Inc.</organization>
+      <organizationUrl>https://www.sevenbridges.com/</organizationUrl>
+    </developer>
+  </developers>
+
+  <modules>
+    <module>api</module>
+    <module>impl</module>
+    <module>extensions</module>
+    <module>examples</module>
+  </modules>
+
+  <properties>
+    <!-- Build configuration -->
+    <project.build.targetJdk>1.7</project.build.targetJdk>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <project.reporting.inputEncoding>UTF-8</project.reporting.inputEncoding>
+
+    <basepom.release.tag-name-format>v@{project.version}</basepom.release.tag-name-format>
+    <basepom.javadoc.skip>false</basepom.javadoc.skip>
+
+    <!-- In Multimodule builds, override this to point at the parent directory for e.g. the license resources. -->
+    <!-- See http://stackoverflow.com/questions/1012402/maven2-property-that-indicates-the-parent-directory    -->
+    <main.basedir>${project.basedir}</main.basedir>
+
+    <!-- https://github.com/mycila/license-maven-plugin/releases -->
+    <dep.plugin.license.version>3.0</dep.plugin.license.version>
+
+    <!--
+      Dependency versions that should be the same everywhere.
+
+      Each version property should be of the form "<artifactId>.version".
+     -->
+    <findbugs.version>3.0.2</findbugs.version>
+    <slf4j.version>1.7.25</slf4j.version>
+    <logback.version>1.2.3</logback.version>
+    <jackson.version>2.8.9</jackson.version>
+    <joda-time.version>2.9.9</joda-time.version>
+    <httpcore.version>4.4.6</httpcore.version>
+    <httpclient.version>4.5.3</httpclient.version>
+    <httpasyncclient.version>4.1.3</httpasyncclient.version>
+    <!-- Test Dependencies: Only required for testing when building the project.  Not required by project users at runtime: -->
+    <testng.version>6.11</testng.version>
+    <mockito.version>2.8.9</mockito.version>
+    <assertj.version>2.7.0</assertj.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- 'Pool' of dependencies available to any sub-module, but not included automatically.
+           They must be explicitly referenced in the children POMs, but _don't_ include
+           version numbers in the child POMs.  Define them here only to guarantee version
+           compatibility across children modules! -->
+
+      <!-- SevenBridges Java sub-module .jars (alphabetized by artifactId for easy scanning please!): -->
+      <dependency>
+        <groupId>com.sevenbridges.apiclient</groupId>
+        <artifactId>sevenbridges-java-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sevenbridges.apiclient</groupId>
+        <artifactId>sevenbridges-java-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sevenbridges.apiclient</groupId>
+        <artifactId>sevenbridges-java-httpclient</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- 3rd party dependencies: -->
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>${findbugs.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>${httpcore.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>${httpclient.version}</version>
+        <!-- The SevenBridges Java project uses SLF4J: -->
+        <exclusions>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpasyncclient</artifactId>
+        <version>${httpasyncclient.version}</version>
+        <!-- The SevenBridges Java project uses SLF4J: -->
+        <exclusions>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore-nio</artifactId>
+        <version>${httpcore.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+        <!-- Runtime only - replaces commons-logging runtime need for HTTPClient: -->
+        <scope>runtime</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${joda-time.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback.version}</version>
+      </dependency>
+
+      <!-- Testing -->
+      <dependency>
+        <groupId>org.testng</groupId>
+        <artifactId>testng</artifactId>
+        <version>${testng.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${mockito.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Dependencies for _all_ children modules: -->
+
+    <!-- Testing -->
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${dep.plugin.license.version}</version>
+          <configuration>
+            <skip>false</skip>
+            <skipExistingHeaders>false</skipExistingHeaders>
+            <failIfMissing>true</failIfMissing>
+            <header>${main.basedir}/src/license/LICENSE-HEADER.txt</header>
+            <headerDefinitions>
+              <headerDefinition>${main.basedir}/src/license/xml-prefix.xml</headerDefinition>
+            </headerDefinitions>
+            <mapping>
+              <xml>XML_PREFIX</xml>
+              <java>SLASHSTAR_STYLE</java>
+              <yaml>SCRIPT_STYLE</yaml>
+            </mapping>
+            <strictCheck>true</strictCheck>
+            <aggregate>true</aggregate>
+            <useDefaultExcludes>true</useDefaultExcludes>
+            <encoding>${project.build.sourceEncoding}</encoding>
+            <excludes>
+              <exclude>.*/**</exclude>
+              <exclude>**/*.md</exclude>
+              <exclude>**/*.rst</exclude>
+              <exclude>**/*.adoc</exclude>
+              <exclude>**/*.sh</exclude>
+              <exclude>**/*.txt</exclude>
+              <exclude>**/*.thrift</exclude>
+              <exclude>**/*.proto</exclude>
+              <exclude>**/*.g</exclude>
+              <exclude>**/*.releaseBackup</exclude>
+              <exclude>**/*.vm</exclude>
+              <exclude>**/*.st</exclude>
+              <exclude>**/*.raw</exclude>
+              <exclude>**/*.ser</exclude>
+              <exclude>**/src/license/**</exclude>
+              <exclude>**/src/checkstyle/**</exclude>
+              <exclude>**/*.properties</exclude>
+              <exclude>**/logback*</exclude>
+              <exclude>**/Base64.java</exclude>
+            </excludes>
+            <includes>
+              <include>src/**</include>
+              <include>**/pom.xml</include>
+            </includes>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <configuration>
+            <configLocation>${main.basedir}/src/checkstyle/checks.xml</configLocation>
+          </configuration>
+        </plugin>
+
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive combine.self="override">
+            <manifest>
+              <addClasspath>false</addClasspath>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+            </manifest>
+            <manifestSections>
+              <manifestSection>
+                <name>${project.groupId}:${project.artifactId}</name>
+                <manifestEntries>
+                  <!-- project information -->
+                  <Project-ArtifactId>${project.artifactId}</Project-ArtifactId>
+                  <Project-GroupId>${project.groupId}</Project-GroupId>
+                  <Project-Name>${project.name}</Project-Name>
+                  <Project-Version>${project.version}</Project-Version>
+                </manifestEntries>
+              </manifestSection>
+            </manifestSections>
+          </archive>
+        </configuration>
+        <executions>
+          <!-- Disable building test jar -->
+          <execution>
+            <id>attach-tests</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <!-- Disable building test-sources jar -->
+          <execution>
+            <id>attach-sources</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>attach-jar-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <sourceFileExcludes>
+            <exclude>**/HttpHeaders.java</exclude>
+            <exclude>**/MediaType.java</exclude>
+            <exclude>**/Base64.java</exclude>
+          </sourceFileExcludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <excludeFilterFile>${main.basedir}/findbugs-exclude.xml</excludeFilterFile>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>
