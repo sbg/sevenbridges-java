@@ -33,6 +33,7 @@
   <description>
     The SevenBridges Platform Java enables JVM-based applications to easily interact with SevenBridges's REST API.
   </description>
+  <url>https://github.com/sbg/sevenbridges-java</url>
 
   <inceptionYear>2016</inceptionYear>
 
@@ -58,6 +59,26 @@
       <organizationUrl>https://www.sevenbridges.com/</organizationUrl>
     </developer>
   </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:sbg/sevenbridges-java.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/sbg/sevenbridges-java.git</developerConnection>
+    <url>https://github.com/sbg/sevenbridges-java</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/sbg/sevenbridges-java/issues</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <repository>
+      <id>bintray-sevenbridges-maven</id>
+      <name>sevenbridges-maven</name>
+      <url>https://api.bintray.com/maven/sevenbridges/maven/sevenbridges-java/;publish=1</url>
+    </repository>
+  </distributionManagement>
 
   <modules>
     <module>api</module>
