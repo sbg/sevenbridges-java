@@ -18,11 +18,7 @@ If you have feedback about this library, please get in touch and share your thou
 
 SevenBridges offers detailed documentation and support for the Java library, the public API.
 
-[Java library overview](http://docs.sevenbridges.com/v1.0/reference#api-java-library)
-
-[Java library docs](http://docs.sevenbridges.com/v1.0/reference#javaapidocs)
-
-[Java library Quickstart](http://docs.sevenbridges.com/v1.0/reference#javaquickstart)
+[Java library overview and Quickstart](http://docs.sevenbridges.com/docs/api-java-library)
 
 [Public API overview and reference](http://docs.sevenbridges.com/v1.0/reference#the-api)
 
