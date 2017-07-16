@@ -1,0 +1,55 @@
+/*
+ * Copyright 2017 Seven Bridges Genomics, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.sevenbridges.apiclient.impl.query;
+
+import com.sevenbridges.apiclient.lang.Assert;
+import com.sevenbridges.apiclient.query.Criterion;
+
+import java.util.List;
+
+public class ListExpression implements Criterion {
+
+  private final String propertyName;
+  private final List<?> value;
+  private final Operator op;
+
+  public ListExpression(String propertyName, List<?> values, Operator op) {
+    Assert.hasText(propertyName, "propertyName must be a text value.");
+    Assert.notNull(values, "values must not be null.");
+    Assert.notEmpty(values, "values must not be empty.");
+    Assert.notNull(op, "operator must not be null");
+    this.propertyName = propertyName;
+    this.value = values;
+    this.op = op;
+  }
+
+  public String getPropertyName() {
+    return propertyName;
+  }
+
+  public List<?> getValue() {
+    return value;
+  }
+
+  public Operator getOp() {
+    return op;
+  }
+
+  @Override
+  public String toString() {
+    return propertyName + getOp().getSymbol() + value;
+  }
+}

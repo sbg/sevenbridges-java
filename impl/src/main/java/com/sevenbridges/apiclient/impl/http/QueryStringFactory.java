@@ -19,6 +19,7 @@ import com.sevenbridges.apiclient.impl.http.support.DefaultCanonicalUri;
 import com.sevenbridges.apiclient.impl.query.DefaultCriteria;
 import com.sevenbridges.apiclient.impl.query.DefaultOptions;
 import com.sevenbridges.apiclient.impl.query.Expansion;
+import com.sevenbridges.apiclient.impl.query.ListExpression;
 import com.sevenbridges.apiclient.impl.query.SimpleExpression;
 import com.sevenbridges.apiclient.lang.Collections;
 import com.sevenbridges.apiclient.lang.Strings;
@@ -137,6 +138,13 @@ public class QueryStringFactory {
         Object value = se.getValue();
         String queryParamValue = String.valueOf(value);
         qs.add(queryParamName, queryParamValue);
+      } else if (c instanceof ListExpression) {
+        ListExpression le = (ListExpression) c;
+        String queryParamName = le.getPropertyName();
+        List<?> values = le.getValue();
+        for (Object v : values) {
+          qs.add(queryParamName, String.valueOf(v));
+        }
       } else {
         throw new IllegalArgumentException("Unexpected Criterion type: " + c);
       }
