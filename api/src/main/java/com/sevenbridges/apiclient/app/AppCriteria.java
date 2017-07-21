@@ -88,5 +88,4 @@ public interface AppCriteria extends Criteria<AppCriteria>, AppOptions<AppCriter
    */
   AppCriteria isPrivate();
 
-
 }

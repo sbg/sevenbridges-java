@@ -133,5 +133,4 @@ public interface TaskCriteria extends Criteria<TaskCriteria>, TaskOptions<TaskCr
    * @return TaskCriteria with added specified criterion.
    */
   TaskCriteria endedTo(Date endedTo);
-
 }

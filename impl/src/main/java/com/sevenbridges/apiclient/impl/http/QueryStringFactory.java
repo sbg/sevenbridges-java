@@ -144,7 +144,6 @@ public class QueryStringFactory {
           String queryParamValue = String.valueOf(value);
           qs.add(queryParamName, queryParamValue);
         }
-
       } else {
         throw new IllegalArgumentException("Unexpected Criterion type: " + c);
       }

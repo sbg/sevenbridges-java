@@ -45,11 +45,11 @@ interface AppActions {
   App copy(Project destination, String newName);
 
   /**
-   * Performs a synchronization action on the current app instance. If the current app instance is
-   * a copy of another app it will collect all changes from the parent app and apply it to the instance.
+   * Performs a synchronization action on the current app instance. If the current app instance is a
+   * copy of another app it will collect all changes from the parent app and apply it to the
+   * instance.
    *
    * @return a new {@link App} instance, created by the synchronize action.
    */
   App synchronize();
-
 }

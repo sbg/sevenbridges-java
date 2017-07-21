@@ -118,5 +118,4 @@ public class DefaultApp extends AbstractInstanceResource implements App {
     App appSync = getDataStore().instantiate(App.class, properties);
     return getDataStore().resourceAction("/actions/sync", appSync, App.class, null);
   }
-
 }

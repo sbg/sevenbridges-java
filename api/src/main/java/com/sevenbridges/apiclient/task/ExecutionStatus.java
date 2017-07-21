@@ -124,5 +124,4 @@ public interface ExecutionStatus {
    * @return Long total task duration.
    */
   Integer getDuration();
-
 }

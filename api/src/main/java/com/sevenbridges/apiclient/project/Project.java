@@ -183,5 +183,4 @@ public interface Project extends Resource, Saveable, Updatable, Deletable, Proje
    */
   //@formatter:on
   Map<String, Boolean> getPermissions();
-
 }
