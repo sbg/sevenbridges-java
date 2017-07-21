@@ -22,6 +22,7 @@ import com.sevenbridges.apiclient.impl.resource.StringProperty;
 import com.sevenbridges.apiclient.impl.resource.SubResourceProperty;
 import com.sevenbridges.apiclient.lang.Assert;
 import com.sevenbridges.apiclient.project.Member;
+import com.sevenbridges.apiclient.project.MemberType;
 import com.sevenbridges.apiclient.project.Members;
 
 import java.util.Map;
@@ -29,11 +30,14 @@ import java.util.Map;
 public class DefaultMember extends AbstractInstanceResource implements Member {
 
   // SIMPLE PROPERTIES:
+  static final StringProperty ID = new StringProperty("id");
   static final StringProperty USERNAME = new StringProperty("username");
+  static final StringProperty EMAIL = new StringProperty("email");
+  static final StringProperty TYPE = new StringProperty("type");
   static final SubResourceProperty PERMISSIONS = new SubResourceProperty("permissions");
 
   private static final Map<String, Property> PROPERTY_DESCRIPTORS = createPropertyDescriptorMap(
-      USERNAME, PERMISSIONS
+      USERNAME, EMAIL, PERMISSIONS
   );
 
   public DefaultMember(InternalDataStore dataStore) {
@@ -64,6 +68,11 @@ public class DefaultMember extends AbstractInstanceResource implements Member {
   ////////////////////////////////////////////////////////////////////////
 
   @Override
+  public String getId() {
+    return getString(ID);
+  }
+
+  @Override
   public String getUsername() {
     return getString(USERNAME);
   }
@@ -72,6 +81,30 @@ public class DefaultMember extends AbstractInstanceResource implements Member {
   public Member setUsername(String username) {
     Assert.hasText(username, "Username property cannot be null or empty");
     setProperty(USERNAME, username);
+    return this;
+  }
+
+  @Override
+  public String getEmail() {
+    return getString(EMAIL);
+  }
+
+  @Override
+  public Member setEmail(String email) {
+    Assert.hasText(email, "Email property cannot be null or empty");
+    setProperty(EMAIL, email);
+    return this;
+  }
+
+  @Override
+  public MemberType getType() {
+    return MemberType.getByValue(getString(TYPE));
+  }
+
+  @Override
+  public Member setType(MemberType type) {
+    Assert.notNull(type, "Type property cannot be null or empty");
+    setProperty(TYPE, type.getName());
     return this;
   }
 

@@ -15,41 +15,12 @@
  */
 package com.sevenbridges.apiclient.impl.query;
 
-import com.sevenbridges.apiclient.lang.Assert;
-import com.sevenbridges.apiclient.query.Criterion;
 
 import java.util.List;
 
-public class ListExpression implements Criterion {
-
-  private final String propertyName;
-  private final List<?> value;
-  private final Operator op;
+public class ListExpression extends SimpleExpression {
 
   public ListExpression(String propertyName, List<?> values, Operator op) {
-    Assert.hasText(propertyName, "propertyName must be a text value.");
-    Assert.notNull(values, "values must not be null.");
-    Assert.notEmpty(values, "values must not be empty.");
-    Assert.notNull(op, "operator must not be null");
-    this.propertyName = propertyName;
-    this.value = values;
-    this.op = op;
-  }
-
-  public String getPropertyName() {
-    return propertyName;
-  }
-
-  public List<?> getValue() {
-    return value;
-  }
-
-  public Operator getOp() {
-    return op;
-  }
-
-  @Override
-  public String toString() {
-    return propertyName + getOp().getSymbol() + value;
+    super(propertyName, values, op);
   }
 }

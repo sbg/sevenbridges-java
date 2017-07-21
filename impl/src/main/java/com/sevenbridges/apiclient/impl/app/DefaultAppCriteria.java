@@ -21,8 +21,8 @@ import com.sevenbridges.apiclient.impl.query.DefaultCriteria;
 import com.sevenbridges.apiclient.impl.query.EqualsExpression;
 import com.sevenbridges.apiclient.impl.query.ListExpression;
 import com.sevenbridges.apiclient.impl.query.Operator;
-import com.sevenbridges.apiclient.impl.util.StringUtils;
 import com.sevenbridges.apiclient.lang.Assert;
+import com.sevenbridges.apiclient.lang.Strings;
 import com.sevenbridges.apiclient.project.Project;
 
 import java.util.List;
@@ -57,16 +57,17 @@ public class DefaultAppCriteria extends DefaultCriteria<AppCriteria, AppOptions>
   }
 
   @Override
-  public AppCriteria forAppIds(List<String> appIds) {
+  public AppCriteria withAppIds(List<String> appIds) {
     Assert.notNull(appIds, "'App Ids' argument cannot be null.");
     Assert.notEmpty(appIds, "'App Ids' argument cannot be empty.");
     return add(new ListExpression("id", appIds, Operator.EQUALS));
   }
 
-  @Override public AppCriteria forQuery(List<String> queryTerms) {
+  @Override
+  public AppCriteria withQuery(List<String> queryTerms) {
     Assert.notNull(queryTerms, "'Query terms argument cannot be null.");
     Assert.notEmpty(queryTerms, "'Query terms argument cannot be empty.");
-    String queryString = StringUtils.join(queryTerms, " ");
+    String queryString = Strings.arrayToDelimitedString(queryTerms.toArray(), " ");
     return add(new EqualsExpression("q", queryString));
   }
 

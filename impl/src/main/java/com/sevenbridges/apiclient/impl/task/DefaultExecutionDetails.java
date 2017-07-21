@@ -44,11 +44,12 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
 
   List<ExecutionJobDetails> jobsList = null;
 
-  protected DefaultExecutionDetails(InternalDataStore dataStore) {
+
+  public DefaultExecutionDetails(InternalDataStore dataStore) {
     super(dataStore);
   }
 
-  protected DefaultExecutionDetails(InternalDataStore dataStore, Map<String, Object> properties) {
+  public DefaultExecutionDetails(InternalDataStore dataStore, Map<String, Object> properties) {
     super(dataStore, properties);
   }
 
@@ -110,16 +111,24 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
         // do nothing, leave them null
       }
       String commandLine = (String) jobMap.get("command_line");
-      Map<String, String> instanceMap = (Map<String, String>) jobMap.get("instance");
+      Map<String, Object> instanceMap = (Map<String, Object>) jobMap.get("instance");
       String instanceId = null;
       String instanceType = null;
       String instanceProvider = null;
+      Integer instanceDiskSize = null;
+      String instanceDiskUnit = null;
+      String instanceDiskType = null;
       if (instanceMap != null) {
-        instanceId = instanceMap.get("id");
-        instanceType = instanceMap.get("type");
-        instanceProvider = instanceMap.get("provider");
+        instanceId = (String) instanceMap.get("id");
+        instanceType = (String) instanceMap.get("type");
+        instanceProvider = (String) instanceMap.get("provider");
+        Map<String, Object> diskMap = (Map<String, Object>) instanceMap.get("disk");
+        instanceDiskSize = (Integer) diskMap.get("size");
+        instanceDiskUnit = (String) diskMap.get("unit");
+        instanceDiskType = (String) diskMap.get("type");
       }
       String status = (String) jobMap.get("status");
+      Boolean retried = (Boolean) jobMap.get("retried");
       Map<String, String> dockerMap = (Map<String, String>) jobMap.get("docker");
       String dockerChecksum = null;
       if (dockerMap != null) {
@@ -134,10 +143,14 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
           startTime,
           endTime,
           commandLine,
-          instanceId,
-          instanceType,
-          instanceProvider,
           status,
+          retried,
+          instanceType,
+          instanceId,
+          instanceProvider,
+          instanceDiskSize,
+          instanceDiskUnit,
+          instanceDiskType,
           dockerChecksum,
           logs
       );
@@ -153,20 +166,28 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
     private final Date endTime;
     private final String commandLine;
     private final String status;
+    private final Boolean retried;
     private final String instanceType;
     private final String instanceId;
     private final String instanceProvider;
     private final String dockerChecksum;
     private final Map<String, String> logs;
+    private final Integer instanceDiskSize;
+    private final String instanceDiskUnit;
+    private final String instanceDiskType;
 
     DefaultExecutionJobDetails(final String name,
                                final Date startTime,
                                final Date endTime,
                                final String commandLine,
                                final String status,
+                               final Boolean retried,
                                final String instanceType,
                                final String instanceId,
                                final String instanceProvider,
+                               final Integer instanceDiskSize,
+                               final String instanceDiskUnit,
+                               final String instanceDiskType,
                                final String dockerChecksum,
                                final Map<String, String> logs) {
       this.name = name;
@@ -174,9 +195,13 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
       this.endTime = endTime;
       this.commandLine = commandLine;
       this.status = status;
+      this.retried = retried;
       this.instanceType = instanceType;
       this.instanceId = instanceId;
       this.instanceProvider = instanceProvider;
+      this.instanceDiskSize = instanceDiskSize;
+      this.instanceDiskUnit = instanceDiskUnit;
+      this.instanceDiskType = instanceDiskType;
       this.dockerChecksum = dockerChecksum;
       this.logs = logs;
     }
@@ -207,6 +232,11 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
     }
 
     @Override
+    public Boolean getRetried() {
+      return retried;
+    }
+
+    @Override
     public String getInstanceType() {
       return instanceType;
     }
@@ -219,6 +249,21 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
     @Override
     public String getInstanceProvider() {
       return instanceProvider;
+    }
+
+    @Override
+    public Integer getInstanceDiskSize() {
+      return instanceDiskSize;
+    }
+
+    @Override
+    public String getInstanceDiskUnit() {
+      return instanceDiskUnit;
+    }
+
+    @Override
+    public String getInstanceDiskType() {
+      return instanceDiskType;
     }
 
     @Override

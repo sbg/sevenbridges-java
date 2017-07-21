@@ -18,6 +18,8 @@ package com.sevenbridges.apiclient.task;
 import com.sevenbridges.apiclient.project.Project;
 import com.sevenbridges.apiclient.query.Criteria;
 
+import java.util.Date;
+
 /**
  * An {@link Task}-specific {@link Criteria} class which enables a Task-specific <a
  * href="http://en.wikipedia.org/wiki/Fluent_interface">fluent</a> query DSL.
@@ -77,5 +79,59 @@ public interface TaskCriteria extends Criteria<TaskCriteria>, TaskOptions<TaskCr
    * @return TaskCriteria with added specified criterion
    */
   TaskCriteria withParentTask(Task parentTask);
+
+  /**
+   * Adds a specific criterion to the current {@link TaskCriteria} instance. Only {@link Tasks}s
+   * that were created from the provided {@link Date} and onward can meet this criteria.
+   *
+   * @param createdFrom Date
+   * @return TaskCriteria with added specified criterion.
+   */
+  TaskCriteria createdFrom(Date createdFrom);
+
+  /**
+   * Adds a specific criterion to the current {@link TaskCriteria} instance. Only {@link Tasks}s
+   * that were created up to the provided {@link Date} can meet this criteria.
+   *
+   * @param createdTo Date
+   * @return TaskCriteria with added specified criterion.
+   */
+  TaskCriteria createdTo(Date createdTo);
+
+  /**
+   * Adds a specific criterion to the current {@link TaskCriteria} instance. Only {@link Tasks}s
+   * that were started from the provided {@link Date} and onward can meet this criteria.
+   *
+   * @param startedFrom Date
+   * @return TaskCriteria with added specified criterion.
+   */
+  TaskCriteria startedFrom(Date startedFrom);
+
+  /**
+   * Adds a specific criterion to the current {@link TaskCriteria} instance. Only {@link Tasks}s
+   * that were started up to the provided {@link Date} and onward can meet this criteria.
+   *
+   * @param startedTo Date
+   * @return TaskCriteria with added specified criterion.
+   */
+  TaskCriteria startedTo(Date startedTo);
+
+  /**
+   * Adds a specific criterion to the current {@link TaskCriteria} instance. Only {@link Tasks}s
+   * that ended from the provided {@link Date} and onward can meet this criteria.
+   *
+   * @param endedFrom Date
+   * @return TaskCriteria with added specified criterion.
+   */
+  TaskCriteria endedFrom(Date endedFrom);
+
+  /**
+   * Adds a specific criterion to the current {@link TaskCriteria} instance. Only {@link Tasks}s
+   * that were ended up to the provided {@link Date} and onward can meet this criteria.
+   *
+   * @param endedTo Date
+   * @return TaskCriteria with added specified criterion.
+   */
+  TaskCriteria endedTo(Date endedTo);
 
 }

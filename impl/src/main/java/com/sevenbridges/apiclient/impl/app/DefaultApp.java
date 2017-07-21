@@ -110,7 +110,8 @@ public class DefaultApp extends AbstractInstanceResource implements App {
     return getDataStore().create(copyHref, appCopy);
   }
 
-  @Override public App synchronize() {
+  @Override
+  public App synchronize() {
     String hrefNoRev = getHref().substring(0, getHref().lastIndexOf("/"));
     Map<String, Object> properties = new HashMap<>(1);
     properties.put(HREF_PROP_NAME, hrefNoRev);

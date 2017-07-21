@@ -60,17 +60,17 @@ public interface AppCriteria extends Criteria<AppCriteria>, AppOptions<AppCriter
    * @param appIds App identifiers.
    * @return AppCriteria with added specified criterion
    */
-  AppCriteria forAppIds(List<String> appIds);
+  AppCriteria withAppIds(List<String> appIds);
 
   /**
    * Adds a specific criterion to the current {@link AppCriteria} instance. Only {@link App}s with
-   * attributes (name, label, toolkit, toolkit version, category, tagline, description) that
-   * match the query terms will satisfy this criterion.
+   * attributes (name, label, toolkit, toolkit version, category, tagline, description) that match
+   * the query terms will satisfy this criterion.
    *
    * @param queryTerms Query terms.
    * @return AppCriteria with added specified criterion.
    */
-  AppCriteria forQuery(List<String> queryTerms);
+  AppCriteria withQuery(List<String> queryTerms);
 
   /**
    * Adds a specific criterion to the current {@link AppCriteria} instance. Only {@link App}s that
