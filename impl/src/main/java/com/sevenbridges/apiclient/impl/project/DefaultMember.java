@@ -37,7 +37,7 @@ public class DefaultMember extends AbstractInstanceResource implements Member {
   static final SubResourceProperty PERMISSIONS = new SubResourceProperty("permissions");
 
   private static final Map<String, Property> PROPERTY_DESCRIPTORS = createPropertyDescriptorMap(
-      USERNAME, EMAIL, PERMISSIONS
+      ID, USERNAME, EMAIL, PERMISSIONS, TYPE
   );
 
   public DefaultMember(InternalDataStore dataStore) {
@@ -125,5 +125,4 @@ public class DefaultMember extends AbstractInstanceResource implements Member {
     setProperty(PERMISSIONS, validatedPermissions);
     return this;
   }
-
 }

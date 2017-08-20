@@ -23,6 +23,11 @@
   </Match>
 
   <Match>
+    <Class name="com.sevenbridges.apiclient.impl.task.DefaultTaskCriteria"/>
+    <Bug pattern="STCAL_INVOKE_ON_STATIC_DATE_FORMAT_INSTANCE"/>
+  </Match>
+
+  <Match>
     <Class name="com.sevenbridges.apiclient.impl.transfer.UploadCallable"/>
     <Method name="call"/>
     <Bug pattern="REC_CATCH_EXCEPTION"/>

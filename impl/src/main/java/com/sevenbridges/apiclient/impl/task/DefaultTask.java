@@ -66,8 +66,8 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
 
   private static final Map<String, Property> PROPERTY_DESCRIPTORS = createPropertyDescriptorMap(
       ID, NAME, STATUS, DESCRIPTION, PROJECT_ID, APP_ID, TYPE, CREATED_BY, EXECUTED_BY,
-      START_TIME, END_TIME, BATCH, BATCH_BY, BATCH_GROUP, PARENT, EXECUTION_STATUS, INPUTS, OUTPUTS,
-      ERRORS, WARNINGS
+      START_TIME, END_TIME, CREATED_TIME, BATCH, BATCH_BY, BATCH_GROUP, PARENT, EXECUTION_STATUS,
+      INPUTS, OUTPUTS, ERRORS, WARNINGS
   );
 
   static final int H_ACTION_RUN = 0;
@@ -261,7 +261,7 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
 
   @Override
   public ExecutionDetails getExecutionDetails() {
-    return getDataStore().getResource(this.getHref() +  HREF_REFERENCES[H_EXECUTION_DETAILS], ExecutionDetails.class);
+    return getDataStore().getResource(this.getHref() + HREF_REFERENCES[H_EXECUTION_DETAILS], ExecutionDetails.class);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -388,37 +388,37 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
     }
 
     @Override
-    public Boolean getSystemLimit() {
+    public Boolean isSystemLimitReached() {
       return (Boolean) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, SYSTEM_LIMIT);
     }
 
     @Override
-    public Boolean getAccountLimit() {
+    public Boolean isAccountLimitReached() {
       return (Boolean) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, ACCOUNT_LIMIT);
     }
 
     @Override
-    public Boolean getInstanceInit() {
+    public Boolean isInstanceInitializing() {
       return (Boolean) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, INSTANCE_INIT);
     }
 
     @Override
-    public Integer getQueuedDuration() {
+    public Integer getQueuedDurationSeconds() {
       return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, QUEUED_DURATION);
     }
 
     @Override
-    public Integer getRunningDuration() {
+    public Integer getRunningDurationSeconds() {
       return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, RUNNING_DURATION);
     }
 
     @Override
-    public Integer getExecutionDuration() {
+    public Integer getExecutionDurationSeconds() {
       return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, EXECUTION_DURATION);
     }
 
     @Override
-    public Integer getDuration() {
+    public Integer getTotalDurationSeconds() {
       return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, DURATION);
     }
   }

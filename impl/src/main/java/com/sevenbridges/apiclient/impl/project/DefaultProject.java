@@ -85,9 +85,7 @@ public class DefaultProject extends AbstractInstanceResource implements Project 
   };
 
   private static final Map<String, Property> PROPERTY_DESCRIPTORS = createPropertyDescriptorMap(
-      ID, NAME, TYPE, TAGS, DESCRIPTION, SETTINGS,
-      BILLING_GROUP,
-      FILES, MEMBERS, APPS
+      ID, NAME, TYPE, TAGS, DESCRIPTION, SETTINGS, BILLING_GROUP, PERMISSIONS, FILES, MEMBERS, APPS
   );
 
   private static final int PROPERTIES_COUNT = PROPERTY_DESCRIPTORS.size() - 3;

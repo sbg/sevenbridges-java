@@ -15,7 +15,6 @@
  */
 package com.sevenbridges.apiclient.impl.query;
 
-
 import java.util.List;
 
 public class ListExpression extends SimpleExpression {

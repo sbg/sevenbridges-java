@@ -44,12 +44,11 @@ public class DefaultExecutionDetails extends AbstractInstanceResource implements
 
   List<ExecutionJobDetails> jobsList = null;
 
-
-  public DefaultExecutionDetails(InternalDataStore dataStore) {
+  protected DefaultExecutionDetails(InternalDataStore dataStore) {
     super(dataStore);
   }
 
-  public DefaultExecutionDetails(InternalDataStore dataStore, Map<String, Object> properties) {
+  protected DefaultExecutionDetails(InternalDataStore dataStore, Map<String, Object> properties) {
     super(dataStore, properties);
   }
 

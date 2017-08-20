@@ -81,47 +81,47 @@ public interface ExecutionStatus {
    *
    * @return Boolean system limit
    */
-  Boolean getSystemLimit();
+  Boolean isSystemLimitReached();
 
   /**
    * Boolean indicating whether the account instance limit has bean reached.
    *
    * @return Boolean account limit
    */
-  Boolean getAccountLimit();
+  Boolean isAccountLimitReached();
 
   /**
    * Boolean indicating whether the task is in initializing state.
    *
    * @return Boolean instance init
    */
-  Boolean getInstanceInit();
+  Boolean isInstanceInitializing();
 
   /**
    * Long amount of time that task has spent in the Queued state.
    *
    * @return Long queued duration
    */
-  Integer getQueuedDuration();
+  Integer getQueuedDurationSeconds();
 
   /**
    * Long amount of time that task has spent in the Running state.
    *
    * @return Long running duration
    */
-  Integer getRunningDuration();
+  Integer getRunningDurationSeconds();
 
   /**
    * Long amount of current execution time.
    *
    * @return Long current execution duration.
    */
-  Integer getExecutionDuration();
+  Integer getExecutionDurationSeconds();
 
   /**
    * Long total duration.
    *
    * @return Long total task duration.
    */
-  Integer getDuration();
+  Integer getTotalDurationSeconds();
 }
