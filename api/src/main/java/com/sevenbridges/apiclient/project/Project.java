@@ -20,6 +20,7 @@ import com.sevenbridges.apiclient.resource.Resource;
 import com.sevenbridges.apiclient.resource.Saveable;
 import com.sevenbridges.apiclient.resource.Updatable;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -150,4 +151,36 @@ public interface Project extends Resource, Saveable, Updatable, Deletable, Proje
    */
   Project setLocked(Boolean locked);
 
+  //@formatter:off
+  /**
+   * Permissions field, map containing permissions of the current user. Map has fixed key values:
+   * <ul>
+   *   <li>
+   *     <b>read</b>: Member can view file names, metadata, and workflows. They cannot view file
+   *     contents. All members of a project have read permissions by default, and it cannot be
+   *     unset.
+   *   </li>
+   *   <li>
+   *     <b>write</b>: Member can add, modify, and remove files and workflows in a project.
+   *     Set value to true to assign the user write permission, and false to remove it.
+   *   </li>
+   *   <li>
+   *     <b>copy</b>: Member can view file content, copy, and download files from a project.
+   *     Set value to true to assign the user copy permission, and false to remove it.
+   *   </li>
+   *   <li>
+   *     <b>execute</b>: User can execute workflows and abort tasks in a project.
+   *     Set value to true to assign the user execute permission, and false to remove it.
+   *   </li>
+   *   <li>
+   *     <b>admin</b>: User can modify another user's permissions on a project, add or remove people
+   *     from the project and manage funding sources. They also have all of the above permissions.
+   *     Set value to true to assign the user admin permission, and false to remove it
+   *   </li>
+   * </ul>
+   *
+   * @return Map of the members permissions
+   */
+  //@formatter:on
+  Map<String, Boolean> getPermissions();
 }

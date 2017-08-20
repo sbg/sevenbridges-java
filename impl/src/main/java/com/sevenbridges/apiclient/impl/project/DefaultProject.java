@@ -56,6 +56,7 @@ public class DefaultProject extends AbstractInstanceResource implements Project 
   static final StringProperty DESCRIPTION = new StringProperty("description");
   static final StringProperty BILLING_GROUP = new StringProperty("billing_group");
   static final MapProperty SETTINGS = new MapProperty("settings");
+  static final MapProperty PERMISSIONS = new MapProperty("permissions");
 
   // COLLECTION RESOURCE REFERENCES:
   static final CollectionReference<FileList, File> FILES =
@@ -84,9 +85,7 @@ public class DefaultProject extends AbstractInstanceResource implements Project 
   };
 
   private static final Map<String, Property> PROPERTY_DESCRIPTORS = createPropertyDescriptorMap(
-      ID, NAME, TYPE, TAGS, DESCRIPTION, SETTINGS,
-      BILLING_GROUP,
-      FILES, MEMBERS, APPS
+      ID, NAME, TYPE, TAGS, DESCRIPTION, SETTINGS, BILLING_GROUP, PERMISSIONS, FILES, MEMBERS, APPS
   );
 
   private static final int PROPERTIES_COUNT = PROPERTY_DESCRIPTORS.size() - 3;
@@ -192,6 +191,11 @@ public class DefaultProject extends AbstractInstanceResource implements Project 
     Assert.notNull(locked, "Locked object cannot be null");
     setMapPropertyEntry(SETTINGS, "locked", locked);
     return this;
+  }
+
+  @Override
+  public Map<String, Boolean> getPermissions() {
+    return getMap(PERMISSIONS);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -347,7 +351,7 @@ public class DefaultProject extends AbstractInstanceResource implements Project 
     App app = getDataStore().instantiate(App.class, appProperties);
     String actionHref = HREF_REFERENCES[H_RAW];
     getDataStore().resourceAction(actionHref, app, App.class, new HashMap<String, Object>(), raw);
-    return getDataStore().getResource((String)appProperties.get("href"), App.class);
+    return getDataStore().getResource((String) appProperties.get("href"), App.class);
   }
 
   @Override
@@ -360,7 +364,7 @@ public class DefaultProject extends AbstractInstanceResource implements Project 
     App app = getDataStore().instantiate(App.class, appProperties);
     String actionHref = HREF_REFERENCES[H_RAW];
     getDataStore().resourceAction(actionHref, app, App.class, new HashMap<String, Object>(), raw);
-    return getDataStore().getResource((String)appProperties.get("href"), App.class);
+    return getDataStore().getResource((String) appProperties.get("href"), App.class);
   }
 
 }

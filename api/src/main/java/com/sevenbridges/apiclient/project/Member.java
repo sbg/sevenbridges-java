@@ -28,6 +28,13 @@ import java.util.Map;
 public interface Member extends Resource, Saveable, Updatable, Deletable {
 
   /**
+   * Id field, unique string identifier of the user and project member on the Platform.
+   *
+   * @return String 'id' property of the current instance.
+   */
+  String getId();
+
+  /**
    * Username field, unique string identifier of user and project member on the Platform.
    *
    * @return String 'username' property of the current instance
@@ -44,6 +51,36 @@ public interface Member extends Resource, Saveable, Updatable, Deletable {
    * @return Current Member instance
    */
   Member setUsername(String username);
+
+  /**
+   * Email field, unique string identifier of user and project member on the Platform.
+   *
+   * @return String 'email' property of the current instance
+   */
+  String getEmail();
+
+  /**
+   * Sets the property email of the current Member instance locally.
+   * <p>
+   * To permanently change the resource on the Platform invoke {@link Saveable#save()} on the
+   * current instance.
+   */
+  Member setEmail(String email);
+
+  /**
+   * Type field, identifying the project member type.
+   * <p>
+   * Project Member allowed values USER, TEAM, DIVISION
+   */
+  MemberType getType();
+
+  /**
+   * Sets the property type of the current Member instance locally.
+   *
+   * @param type Member type to be set.
+   * @return Current member instance.
+   */
+  Member setType(MemberType type);
 
   //@formatter:off
   /**

@@ -18,6 +18,8 @@ package com.sevenbridges.apiclient.app;
 import com.sevenbridges.apiclient.project.Project;
 import com.sevenbridges.apiclient.query.Criteria;
 
+import java.util.List;
+
 /**
  * An {@link App}-specific {@link Criteria} class which enables an App-specific <a
  * href="http://en.wikipedia.org/wiki/Fluent_interface">fluent</a> query DSL.
@@ -50,6 +52,25 @@ public interface AppCriteria extends Criteria<AppCriteria>, AppOptions<AppCriter
    * @return AppCriteria with added specified criterion
    */
   AppCriteria forProjectOwner(String username);
+
+  /**
+   * Adds a specific criterion to the current {@link AppCriteria} instance. Only {@link App}s with
+   * ids that are the same as requested can meet this criteria.
+   *
+   * @param appIds App identifiers.
+   * @return AppCriteria with added specified criterion
+   */
+  AppCriteria withAppIds(List<String> appIds);
+
+  /**
+   * Adds a specific criterion to the current {@link AppCriteria} instance. Only {@link App}s with
+   * attributes (name, label, toolkit, toolkit version, category, tagline, description) that match
+   * the query terms will satisfy this criterion.
+   *
+   * @param queryTerms Query terms.
+   * @return AppCriteria with added specified criterion.
+   */
+  AppCriteria withQuery(List<String> queryTerms);
 
   /**
    * Adds a specific criterion to the current {@link AppCriteria} instance. Only {@link App}s that

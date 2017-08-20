@@ -59,6 +59,13 @@ public interface ExecutionJobDetails {
   String getStatus();
 
   /**
+   * Boolean retried flag is true if task retried for some reason.
+   *
+   * @return Boolean retried status.
+   */
+  Boolean getRetried();
+
+  /**
    * String type of instance used for running this job.
    *
    * @return String instance type
@@ -78,6 +85,27 @@ public interface ExecutionJobDetails {
    * @return String instance provider
    */
   String getInstanceProvider();
+
+  /**
+   * Integer instance attached disk size.
+   *
+   * @return Integer instance disk size
+   */
+  Integer getInstanceDiskSize();
+
+  /**
+   * String instance attached disk measure unit.
+   *
+   * @return String instance disk measure unit
+   */
+  String getInstanceDiskUnit();
+
+  /**
+   * String instance attached disk type.
+   *
+   * @return String instance attached disk type.
+   */
+  String getInstanceDiskType();
 
   /**
    * SHA hash checksum of the Docker image.

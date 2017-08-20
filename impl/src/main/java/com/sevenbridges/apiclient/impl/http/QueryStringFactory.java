@@ -135,8 +135,15 @@ public class QueryStringFactory {
         SimpleExpression se = (SimpleExpression) c;
         String queryParamName = se.getPropertyName();
         Object value = se.getValue();
-        String queryParamValue = String.valueOf(value);
-        qs.add(queryParamName, queryParamValue);
+        if (value instanceof List) {
+          List<?> values = (List<?>) se.getValue();
+          for (Object v : values) {
+            qs.add(queryParamName, String.valueOf(v));
+          }
+        } else {
+          String queryParamValue = String.valueOf(value);
+          qs.add(queryParamName, queryParamValue);
+        }
       } else {
         throw new IllegalArgumentException("Unexpected Criterion type: " + c);
       }

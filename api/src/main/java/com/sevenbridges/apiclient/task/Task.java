@@ -189,4 +189,11 @@ public interface Task extends Resource, Updatable, Saveable, Deletable, TaskActi
    */
   List<Map<String, Object>> getWarnings();
 
+  /**
+   * CreatedTime field, Date time when the task was created.
+   *
+   * @return Date 'createdTime' property of the current instance
+   */
+  Date getCreatedTime();
+
 }

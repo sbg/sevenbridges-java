@@ -52,6 +52,7 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
   static final StringProperty EXECUTED_BY = new StringProperty("executed_by");
   static final DateProperty START_TIME = new DateProperty("start_time");
   static final DateProperty END_TIME = new DateProperty("end_time");
+  static final DateProperty CREATED_TIME = new DateProperty("created_time");
   static final BooleanProperty BATCH = new BooleanProperty("batch");
   static final MapProperty BATCH_BY = new MapProperty("batch_by");
   static final MapProperty BATCH_GROUP = new MapProperty("batch_group");
@@ -65,8 +66,8 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
 
   private static final Map<String, Property> PROPERTY_DESCRIPTORS = createPropertyDescriptorMap(
       ID, NAME, STATUS, DESCRIPTION, PROJECT_ID, APP_ID, TYPE, CREATED_BY, EXECUTED_BY,
-      START_TIME, END_TIME, BATCH, BATCH_BY, BATCH_GROUP, PARENT, EXECUTION_STATUS, INPUTS, OUTPUTS,
-      ERRORS, WARNINGS
+      START_TIME, END_TIME, CREATED_TIME, BATCH, BATCH_BY, BATCH_GROUP, PARENT, EXECUTION_STATUS,
+      INPUTS, OUTPUTS, ERRORS, WARNINGS
   );
 
   static final int H_ACTION_RUN = 0;
@@ -208,6 +209,11 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
   }
 
   @Override
+  public Date getCreatedTime() {
+    return getDate(CREATED_TIME);
+  }
+
+  @Override
   public void delete() {
     getDataStore().delete(this);
   }
@@ -255,7 +261,7 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
 
   @Override
   public ExecutionDetails getExecutionDetails() {
-    return getDataStore().getResource(this.getId() + HREF_REFERENCES[H_EXECUTION_DETAILS], ExecutionDetails.class);
+    return getDataStore().getResource(this.getHref() + HREF_REFERENCES[H_EXECUTION_DETAILS], ExecutionDetails.class);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -333,6 +339,13 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
     static final String COMPLETED = "completed";
     static final String FAILED = "failed";
     static final String ABORTED = "aborted";
+    static final String SYSTEM_LIMIT = "system_limit";
+    static final String ACCOUNT_LIMIT = "account_limit";
+    static final String INSTANCE_INIT = "instance_init";
+    static final String QUEUED_DURATION = "queued_duration";
+    static final String RUNNING_DURATION = "running_duration";
+    static final String EXECUTION_DURATION = "execution_duration";
+    static final String DURATION = "duration";
 
     @Override
     public Integer getStepsCompleted() {
@@ -372,6 +385,41 @@ public class DefaultTask extends AbstractInstanceResource implements Task {
     @Override
     public Integer getAborted() {
       return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, ABORTED);
+    }
+
+    @Override
+    public Boolean isSystemLimitReached() {
+      return (Boolean) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, SYSTEM_LIMIT);
+    }
+
+    @Override
+    public Boolean isAccountLimitReached() {
+      return (Boolean) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, ACCOUNT_LIMIT);
+    }
+
+    @Override
+    public Boolean isInstanceInitializing() {
+      return (Boolean) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, INSTANCE_INIT);
+    }
+
+    @Override
+    public Integer getQueuedDurationSeconds() {
+      return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, QUEUED_DURATION);
+    }
+
+    @Override
+    public Integer getRunningDurationSeconds() {
+      return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, RUNNING_DURATION);
+    }
+
+    @Override
+    public Integer getExecutionDurationSeconds() {
+      return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, EXECUTION_DURATION);
+    }
+
+    @Override
+    public Integer getTotalDurationSeconds() {
+      return (Integer) DefaultTask.this.getMapPropertyEntry(EXECUTION_STATUS, DURATION);
     }
   }
 }

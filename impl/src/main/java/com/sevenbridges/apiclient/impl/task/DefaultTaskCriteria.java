@@ -15,6 +15,7 @@
  */
 package com.sevenbridges.apiclient.impl.task;
 
+import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.sevenbridges.apiclient.impl.query.DefaultCriteria;
 import com.sevenbridges.apiclient.impl.query.EqualsExpression;
 import com.sevenbridges.apiclient.lang.Assert;
@@ -24,7 +25,13 @@ import com.sevenbridges.apiclient.task.TaskCriteria;
 import com.sevenbridges.apiclient.task.TaskOptions;
 import com.sevenbridges.apiclient.task.TaskStatus;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 public class DefaultTaskCriteria extends DefaultCriteria<TaskCriteria, TaskOptions> implements TaskCriteria {
+
+  private static final DateFormat DATE_FORMAT = new ISO8601DateFormat();
+
 
   public DefaultTaskCriteria() {
     super(new DefaultTaskOptions());
@@ -69,5 +76,47 @@ public class DefaultTaskCriteria extends DefaultCriteria<TaskCriteria, TaskOptio
     Assert.notNull(parentTask, "'Parent task' argument cannot be null.");
     Assert.hasText(parentTask.getId(), "'Task Id' property of a task must be set");
     return add(new EqualsExpression("parent", parentTask.getId()));
+  }
+
+  @Override
+  public TaskCriteria createdFrom(Date createdFrom) {
+    Assert.notNull(createdFrom, "'Created from' argument cannot be null.");
+    String date = DATE_FORMAT.format(createdFrom);
+    return add(new EqualsExpression("created_from", date));
+  }
+
+  @Override
+  public TaskCriteria createdTo(Date createdTo) {
+    Assert.notNull(createdTo, "'Created to' argument cannot be null.");
+    String date = DATE_FORMAT.format(createdTo);
+    return add(new EqualsExpression("created_to", date));
+  }
+
+  @Override
+  public TaskCriteria startedFrom(Date startedFrom) {
+    Assert.notNull(startedFrom, "'Started from' argument cannot be null.");
+    String date = DATE_FORMAT.format(startedFrom);
+    return add(new EqualsExpression("started_from", date));
+  }
+
+  @Override
+  public TaskCriteria startedTo(Date startedTo) {
+    Assert.notNull(startedTo, "'Started to' argument cannot be null.");
+    String date = DATE_FORMAT.format(startedTo);
+    return add(new EqualsExpression("started_to", date));
+  }
+
+  @Override
+  public TaskCriteria endedFrom(Date endedFrom) {
+    Assert.notNull(endedFrom, "'Ended from' argument cannot be null");
+    String date = DATE_FORMAT.format(endedFrom);
+    return add(new EqualsExpression("ended_from", date));
+  }
+
+  @Override
+  public TaskCriteria endedTo(Date endedTo) {
+    Assert.notNull(endedTo, "'Ended to' argument cannot be null");
+    String date = DATE_FORMAT.format(endedTo);
+    return add(new EqualsExpression("ended_to", date));
   }
 }
