@@ -48,3 +48,4 @@ public enum MemberType {
     return null;
   }
 }
+
